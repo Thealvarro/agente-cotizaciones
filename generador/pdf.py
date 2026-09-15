@@ -29,6 +29,8 @@ NAVEGADORES = {
         "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
         "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        "~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "~/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
     ],
     "linux": ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge"],
 }
@@ -37,7 +39,7 @@ NAVEGADORES = {
 def buscar_navegador():
     plataforma = "linux" if sys.platform.startswith("linux") else sys.platform
     for candidato in NAVEGADORES.get(plataforma, []):
-        ruta = os.path.expandvars(candidato)
+        ruta = os.path.expanduser(os.path.expandvars(candidato))
         if os.path.isfile(ruta):
             return ruta
         encontrado = shutil.which(candidato)
@@ -63,7 +65,10 @@ def generar(vista, ruta_logo, destino):
         raise RuntimeError("No encontré Google Chrome ni Microsoft Edge. Hace falta uno de los dos para crear el PDF.")
     destino = Path(destino)
     destino.unlink(missing_ok=True)
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+    # En Linux, Chromium instalado como snap no puede leer /tmp: se usa la carpeta
+    # de destino, que está dentro de la carpeta personal.
+    carpeta_tmp = str(destino.parent) if sys.platform.startswith("linux") else None
+    with tempfile.TemporaryDirectory(dir=carpeta_tmp, ignore_cleanup_errors=True) as tmp:
         entrada = Path(tmp) / "documento.html"
         entrada.write_text(html(vista, ruta_logo), encoding="utf-8")
         subprocess.run([

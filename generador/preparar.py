@@ -15,7 +15,7 @@ import sys
 import venv
 from pathlib import Path
 
-sys.stdout.reconfigure(encoding="utf-8")
+sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
 
 RAIZ = Path(__file__).resolve().parent.parent
 VENV = RAIZ / ".venv"
@@ -36,7 +36,12 @@ def main():
     py = python_del_venv()
     if not py.exists():
         print("Creando el entorno aislado...")
-        venv.create(VENV, with_pip=True)
+        try:
+            venv.create(VENV, with_pip=True)
+        except Exception as e:
+            print(f"FALTA: no se pudo crear el entorno aislado ({e}).")
+            print("En Linux suele faltar un paquete: sudo apt install python3-venv")
+            return 1
 
     print("Instalando librerías...")
     r = subprocess.run([str(py), "-m", "pip", "install", "-q", "--disable-pip-version-check",

@@ -15,6 +15,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 DATOS = Path(os.environ.get("COTIZAR_DATOS", RAIZ)).resolve()
 CARPETA_NEGOCIO = DATOS / "mi-negocio"
 CARPETA_DOCS = DATOS / "mis-documentos"
+CARPETA_BORRADORES = CARPETA_DOCS / "borradores"
 ARCHIVO_NEGOCIO = CARPETA_NEGOCIO / "negocio.json"
 
 PREFIJOS = {"cotizacion": "COT", "propuesta": "PROP"}
@@ -22,6 +23,7 @@ LOGO_MAX_BYTES = 5 * 1024 * 1024
 FIRMAS_IMAGEN = {b"\x89PNG\r\n\x1a\n": "png", b"\xff\xd8\xff": "jpg"}
 RESERVADOS_WINDOWS = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)),
                       *(f"LPT{i}" for i in range(1, 10))}
+TOTAL_MAXIMO = 10 ** 14   # más de 15 dígitos, Excel ya no los muestra exactos
 
 
 class DatosInvalidos(Exception):
@@ -31,7 +33,8 @@ class DatosInvalidos(Exception):
 
 
 def leer_json(ruta):
-    with open(ruta, encoding="utf-8") as f:
+    # utf-8-sig: el Bloc de notas de Windows a veces guarda con BOM.
+    with open(ruta, encoding="utf-8-sig") as f:
         return json.load(f)
 
 
@@ -39,6 +42,27 @@ def escribir_json(ruta, datos):
     Path(ruta).parent.mkdir(parents=True, exist_ok=True)
     with open(ruta, "w", encoding="utf-8") as f:
         json.dump(datos, f, ensure_ascii=False, indent=2)
+
+
+def normalizar(valor):
+    """Quita los null (un campo en null es un campo que no vino) y limpia el texto
+    de caracteres de control: los que trae un copiar y pegar desde Word rompen el
+    .docx, que es XML."""
+    if isinstance(valor, dict):
+        return {k: normalizar(v) for k, v in valor.items() if v is not None}
+    if isinstance(valor, list):
+        return [normalizar(v) for v in valor if v is not None]
+    if isinstance(valor, str):
+        valor = valor.replace("\r\n", "\n").replace("\r", "\n").replace("\x0b", "\n").replace("\x0c", "\n")
+        return re.sub(r"[\x00-\x08\x0e-\x1f\x7f\ud800-\udfff\ufffe\uffff]", "", valor)
+    return valor
+
+
+def cargar_json_validado(ruta, donde):
+    try:
+        return normalizar(leer_json(ruta))
+    except ValueError as e:
+        raise DatosInvalidos([f"{donde}: el archivo no se pudo leer ({e})"])
 
 
 # ------------------------------------------------------------ reglas sueltas
@@ -77,17 +101,26 @@ def numero(errores, obj, clave, donde, minimo, maximo, requerido=True):
         errores.append(f"{donde}: '{clave}' debe estar entre {minimo} y {maximo}")
 
 
-def lista_textos(errores, obj, clave, donde, maximo_items=50):
+def booleano(errores, obj, clave, donde):
+    if clave in obj and not isinstance(obj[clave], bool):
+        errores.append(f"{donde}: '{clave}' debe ser true o false")
+
+
+def lista_textos(errores, obj, clave, donde, maximo_items=50, maximo_largo=500):
     v = obj.get(clave, [])
     if not isinstance(v, list) or not all(isinstance(x, str) for x in v):
         errores.append(f"{donde}: '{clave}' debe ser una lista de textos")
     elif len(v) > maximo_items:
         errores.append(f"{donde}: '{clave}' tiene más de {maximo_items} elementos")
+    elif any(len(x) > maximo_largo for x in v):
+        errores.append(f"{donde}: cada elemento de '{clave}' debe tener hasta {maximo_largo} caracteres")
 
 
 # ------------------------------------------------------------------ negocio
 
 def validar_negocio(n):
+    if not isinstance(n, dict):
+        return ["negocio: formato inválido"]
     e = []
     texto(e, n, "nombre", "negocio", requerido=True, maximo=120)
     texto(e, n, "pais", "negocio", maximo=60)
@@ -115,7 +148,7 @@ def validar_negocio(n):
     else:
         texto(e, m, "codigo", "negocio.moneda", requerido=True, maximo=3)
         texto(e, m, "simbolo", "negocio.moneda", requerido=True, maximo=4)
-        if m.get("decimales") not in (0, 1, 2, 3):
+        if type(m.get("decimales")) is not int or m["decimales"] not in (0, 1, 2, 3):
             e.append("negocio.moneda: 'decimales' debe ser 0, 1, 2 o 3")
         if m.get("miles") not in (".", ",", " ", "'"):
             e.append("negocio.moneda: 'miles' debe ser '.', ',', ' ' o '''")
@@ -123,6 +156,7 @@ def validar_negocio(n):
             e.append("negocio.moneda: 'decimal' debe ser '.' o ','")
         elif m.get("decimal") == m.get("miles"):
             e.append("negocio.moneda: 'miles' y 'decimal' no pueden ser iguales")
+        booleano(e, m, "simbolo_despues", "negocio.moneda")
 
     imp = n.get("impuesto")
     if not isinstance(imp, dict):
@@ -130,6 +164,7 @@ def validar_negocio(n):
     else:
         texto(e, imp, "nombre", "negocio.impuesto", requerido=True, maximo=20)
         numero(e, imp, "tasa", "negocio.impuesto", 0, 100)
+        booleano(e, imp, "incluido_en_precios", "negocio.impuesto")
 
     cond = n.get("condiciones_por_defecto", {})
     if not isinstance(cond, dict):
@@ -137,6 +172,7 @@ def validar_negocio(n):
     else:
         for clave in ("pago", "entrega", "notas"):
             texto(e, cond, clave, "negocio.condiciones_por_defecto", maximo=2000)
+        numero(e, cond, "validez_dias", "negocio.condiciones_por_defecto", 1, 365, requerido=False)
     return e
 
 
@@ -163,7 +199,7 @@ def ruta_logo(negocio):
 def cargar_negocio():
     if not ARCHIVO_NEGOCIO.exists():
         raise DatosInvalidos(["negocio: todavía no está configurado (falta mi-negocio/negocio.json)"])
-    n = leer_json(ARCHIVO_NEGOCIO)
+    n = cargar_json_validado(ARCHIVO_NEGOCIO, "negocio")
     errores = validar_negocio(n)
     if errores:
         raise DatosInvalidos(errores)
@@ -174,16 +210,19 @@ def cargar_negocio():
 # ---------------------------------------------------------------- documento
 
 def validar_documento(d):
+    if not isinstance(d, dict):
+        return ["documento: formato inválido"]
     e = []
     if d.get("tipo") not in PREFIJOS:
         e.append("documento: 'tipo' debe ser 'cotizacion' o 'propuesta'")
     try:
-        date.fromisoformat(d.get("fecha", ""))
+        if not 2000 <= date.fromisoformat(d.get("fecha", "")).year <= 2100:
+            e.append("documento: 'fecha' fuera de rango")
     except (TypeError, ValueError):
         e.append("documento: 'fecha' debe tener el formato AAAA-MM-DD")
     numero(e, d, "validez_dias", "documento", 1, 365, requerido=False)
     folio = d.get("folio")
-    if folio is not None and (not isinstance(folio, int) or isinstance(folio, bool) or folio < 1):
+    if folio is not None and (type(folio) is not int or folio < 1):
         e.append("documento: 'folio' debe ser un entero positivo o no venir")
 
     c = d.get("cliente")
@@ -208,14 +247,13 @@ def validar_documento(d):
             texto(e, it, "descripcion", donde, requerido=True, maximo=300)
             texto(e, it, "detalle", donde, maximo=1000)
             texto(e, it, "unidad", donde, maximo=20)
-            numero(e, it, "cantidad", donde, 0.0001, 1e9)
-            numero(e, it, "precio_unitario", donde, 0, 1e13)
+            numero(e, it, "cantidad", donde, 0.0001, 1e6)
+            numero(e, it, "precio_unitario", donde, 0, 1e12)
             numero(e, it, "descuento_pct", donde, 0, 100, requerido=False)
 
     numero(e, d, "descuento_global_pct", "documento", 0, 100, requerido=False)
-    for clave in ("exento", "precios_incluyen_impuesto"):
-        if clave in d and not isinstance(d[clave], bool):
-            e.append(f"documento: '{clave}' debe ser true o false")
+    booleano(e, d, "exento", "documento")
+    booleano(e, d, "precios_incluyen_impuesto", "documento")
 
     cond = d.get("condiciones", {})
     if not isinstance(cond, dict):
@@ -262,8 +300,10 @@ def completar_documento(d, negocio):
 
 # ------------------------------------------------------- archivos y folios
 
-def nombre_seguro(texto_libre, maximo=60):
+def nombre_seguro(texto_libre, maximo=40):
     t = re.sub(r'[<>:"/\\|?*\x00-\x1f]', " ", texto_libre or "")
+    # Los emoji ocupan el doble en las rutas de Windows y la ruta tiene un tope.
+    t = "".join(ch for ch in t if ord(ch) <= 0xFFFF)
     t = re.sub(r"\.{2,}", " ", t)
     t = re.sub(r"\s+", " ", t).strip(" .")[:maximo].strip(" .")
     if not t or t.upper() in RESERVADOS_WINDOWS:
@@ -271,31 +311,48 @@ def nombre_seguro(texto_libre, maximo=60):
     return t
 
 
+def codigo_documento(d):
+    return f"{PREFIJOS[d['tipo']]}-{d['folio']:04d}"
+
+
+def codigo_de_carpeta(nombre):
+    """'COT-0012 Cliente' -> ('cotizacion', 12). Otra cosa -> None."""
+    m = re.match(r"^(COT|PROP)-(\d{4,})(\s|$)", nombre)
+    if not m:
+        return None
+    tipo = next(t for t, p in PREFIJOS.items() if p == m.group(1))
+    return tipo, int(m.group(2))
+
+
 def folios_existentes(tipo):
+    """Mira los nombres de las carpetas, no solo los datos guardados: si alguien
+    borra un documento.json, igual no se reutiliza su número."""
     usados = []
-    for ruta in CARPETA_DOCS.glob("*/documento.json"):
-        try:
-            d = leer_json(ruta)
-        except (OSError, ValueError):
-            continue
-        if d.get("tipo") == tipo and isinstance(d.get("folio"), int):
-            usados.append(d["folio"])
+    for carpeta in CARPETA_DOCS.glob("*"):
+        codigo = codigo_de_carpeta(carpeta.name) if carpeta.is_dir() else None
+        if codigo and codigo[0] == tipo:
+            usados.append(codigo[1])
     return usados
 
 
 def _contador():
     ruta = CARPETA_DOCS / "folios.json"
-    return ruta, (leer_json(ruta) if ruta.exists() else {})
+    try:
+        contador = leer_json(ruta) if ruta.exists() else {}
+    except ValueError:
+        contador = {}
+    return ruta, contador if isinstance(contador, dict) else {}
 
 
 def proximo_folio(tipo):
     """El folio que tendría el documento, sin reservarlo (para la vista previa)."""
     _, contador = _contador()
-    return max([contador.get(tipo, 0), *folios_existentes(tipo)]) + 1
+    guardado = contador.get(tipo, 0)
+    return max([guardado if type(guardado) is int else 0, *folios_existentes(tipo)]) + 1
 
 
 def siguiente_folio(tipo):
-    """Reserva el folio. Mira el contador Y los documentos existentes: si alguien
+    """Reserva el folio. Mira el contador Y las carpetas existentes: si alguien
     borra folios.json, igual no se repite un número."""
     ruta, contador = _contador()
     folio = proximo_folio(tipo)
@@ -304,12 +361,14 @@ def siguiente_folio(tipo):
     return folio
 
 
-def codigo_documento(d):
-    return f"{PREFIJOS[d['tipo']]}-{d['folio']:04d}"
-
-
 def carpeta_documento(d):
-    return CARPETA_DOCS / f"{codigo_documento(d)} {nombre_seguro(d['cliente']['nombre'])}"
+    codigo = codigo_documento(d)
+    # El nombre se repite en la carpeta y en el archivo. Si la carpeta del
+    # usuario ya tiene una ruta larga (OneDrive, por ejemplo), se acorta el
+    # nombre del cliente para no pasar el tope de ~250 letras de Windows.
+    disponible = (235 - len(str(CARPETA_DOCS)) - 2 * len(codigo) - len(".nuevo.docx")) // 2
+    cliente = nombre_seguro(d["cliente"]["nombre"], maximo=max(8, min(40, disponible)))
+    return CARPETA_DOCS / f"{codigo} {cliente}"
 
 
 # ------------------------------------------------------------------- colores

@@ -16,6 +16,8 @@ from decimal import Decimal
 
 import xlsxwriter
 
+from calculos import decimales_de
+
 FUENTE = "Arial"
 
 
@@ -41,6 +43,11 @@ def formato_moneda(moneda):
     cuerpo = "#,##0" + ("." + "0" * moneda["decimales"] if moneda["decimales"] else "")
     pos = f'{cuerpo} "{s}"' if moneda.get("simbolo_despues") else (f'"{s}"{cuerpo}' if len(s) == 1 else f'"{s} "{cuerpo}')
     return f"{pos};-{pos}"
+
+
+def alto(puntos, minimo=15):
+    """Excel no acepta filas de más de 409 puntos."""
+    return min(409, max(minimo, puntos))
 
 
 def filas_de(texto, caracteres_por_linea):
@@ -193,12 +200,13 @@ class Libro:
             ws.write_number(r, 3, float(it["cantidad"]), self.f(align="right", **borde))
             ws.write_number(r, 4, float(it["precio_unitario"]), dinero)
             pct = float(it["descuento_pct"]) / 100
-            ws.write_number(r, 5, pct, self.f(num_format='0%;-0%;""' if float(it["descuento_pct"]).is_integer()
-                                              else '0.0%;-0.0%;""', align="right", **borde))
+            dec_pct = decimales_de(it["descuento_pct"])
+            ceros = "." + "0" * dec_pct if dec_pct else ""
+            ws.write_number(r, 5, pct, self.f(num_format=f'0{ceros}%;-0{ceros}%;""', align="right", **borde))
             ws.write_formula(r, 6, f"=ROUND(D{r + 1}*E{r + 1}*(1-F{r + 1}),{self.dec})", dinero,
                              float(it["total"]))
             lineas = filas_de(it["descripcion"], 48) + (filas_de(it["detalle"], 56) if it["detalle"] else 0)
-            ws.set_row(r, max(18, 13 * lineas + 5))
+            ws.set_row(r, alto(13 * lineas + 5, 18))
         return primera, primera + len(self.v["lineas"]) - 1
 
     def totales(self, ws, fila, desde, hasta):
@@ -252,7 +260,7 @@ class Libro:
             self.rotulo(ws, fila, 0, etiqueta)
             ws.merge_range(fila + 1, 0, fila + 1, 3, "", self.f())
             ws.write_string(fila + 1, 0, texto, self.f(text_wrap=True, font_size=8.8, font_color=c["tinta_2"]))
-            ws.set_row(fila + 1, max(15, 12.5 * filas_de(texto, 80) + 4))
+            ws.set_row(fila + 1, alto(12.5 * filas_de(texto, 80) + 4))
             fila += 3
         return max(fila, ultima_fila_totales + 1)
 
@@ -273,7 +281,7 @@ class Libro:
         for p in parrafos:
             ws.merge_range(fila, 0, fila, 3, "", self.f())
             ws.write_string(fila, 0, p, self.f(text_wrap=True, font_size=9.3, font_color=self.c["tinta_2"]))
-            ws.set_row(fila, max(15, 13 * filas_de(p, 95) + 4))
+            ws.set_row(fila, alto(13 * filas_de(p, 95) + 4))
             fila += 1
         return fila + 1
 
@@ -320,8 +328,8 @@ class Libro:
                 ws.write_string(fila, 1, et.get("descripcion", ""), self.f(font_color=self.c["tinta_2"], **borde))
                 ws.write_string(fila, 3, et.get("duracion", ""), self.f(bold=True, font_color=self.c["acento_texto"],
                                                                         **borde))
-                ws.set_row(fila, max(18, 13 * max(filas_de(et.get("descripcion", ""), 50),
-                                                  filas_de(et["nombre"], 25)) + 5))
+                ws.set_row(fila, alto(13 * max(filas_de(et.get("descripcion", ""), 50),
+                                              filas_de(et["nombre"], 25)) + 5, 18))
                 fila += 1
             fila += 1
         if p["por_que_nosotros"]:
@@ -337,7 +345,7 @@ def generar(vista, ruta_logo, destino):
         libro.hoja_detalle(ruta_logo)
         libro.wb.worksheets()[0].activate()
     else:
-        hoja = re.sub(r"[\[\]:*?/\\]", "", vista["nombre_documento"])[:31] or "Cotización"
+        hoja = re.sub(r"[\[\]:*?/\\]", "", vista["nombre_documento"])[:31].strip("'") or "Cotización"
         libro.hoja_economica(hoja, ruta_logo, vista["nombre_documento"], f"N° {vista['codigo']}")
     libro.wb.set_properties({"title": f"{vista['nombre_documento']} {vista['codigo']}",
                              "author": vista["negocio"]["nombre"]})

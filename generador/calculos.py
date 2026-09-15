@@ -36,10 +36,12 @@ def calcular(documento, negocio):
     lineas = []
     for item in documento["items"]:
         cantidad = Decimal(str(item["cantidad"]))
-        precio = Decimal(str(item["precio_unitario"]))
+        # El precio se redondea a la moneda ANTES de multiplicar: así lo que se ve
+        # ("3 × $1.501") es exactamente lo que se calcula, y cualquiera lo puede verificar.
+        precio = redondear(Decimal(str(item["precio_unitario"])), dec)
         desc = Decimal(str(item.get("descuento_pct", 0))) / 100
         total_linea = redondear(cantidad * precio * (1 - desc), dec)
-        lineas.append({**item, "total": total_linea})
+        lineas.append({**item, "precio_unitario": precio, "total": total_linea})
 
     subtotal = sum((l["total"] for l in lineas), Decimal(0))
     desc_global_pct = Decimal(str(documento.get("descuento_global_pct", 0))) / 100
@@ -83,15 +85,19 @@ def formato_moneda(valor, moneda):
     return f"{moneda['simbolo']}{numero}" if len(moneda["simbolo"]) == 1 else f"{moneda['simbolo']} {numero}"
 
 
-def formato_cantidad(valor):
-    """2 -> '2' · 2.5 -> '2,5'"""
-    d = Decimal(str(valor)).normalize()
-    texto = f"{d:f}"
-    return texto.replace(".", ",")
+def formato_cantidad(valor, moneda):
+    """2 -> '2' · 2.5 -> '2,5' o '2.5' según el separador decimal del país."""
+    texto = f"{Decimal(str(valor)).normalize():f}"
+    return texto.replace(".", moneda["decimal"])
 
 
-def formato_pct(valor):
-    return formato_cantidad(valor) + "%"
+def formato_pct(valor, moneda):
+    return formato_cantidad(valor, moneda) + "%"
+
+
+def decimales_de(valor):
+    """Cuántos decimales tiene un número tal como se escribió: 12.5 -> 1."""
+    return max(0, -Decimal(str(valor)).normalize().as_tuple().exponent)
 
 
 def fecha_larga(d):

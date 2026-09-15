@@ -9,17 +9,32 @@ Comando principal. Lo usa el agente; el usuario nunca lo escribe.
     python generador/generar.py crear ARCHIVO      crea PDF, Word y Excel
 """
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
 
-from datos import (CARPETA_DOCS, RAIZ, DatosInvalidos, carpeta_documento, cargar_negocio,
-                   codigo_documento, completar_documento, escribir_json, leer_json,
-                   nombre_seguro, proximo_folio, ruta_logo, siguiente_folio, validar_documento)
+from calculos import calcular
+from datos import (CARPETA_BORRADORES, CARPETA_DOCS, RAIZ, TOTAL_MAXIMO, DatosInvalidos,
+                   cargar_json_validado, cargar_negocio, carpeta_documento, codigo_de_carpeta,
+                   completar_documento, escribir_json, leer_json, proximo_folio, ruta_logo,
+                   siguiente_folio, validar_documento)
 
 CARPETA_PAISES = Path(__file__).resolve().parent / "paises.json"
+FORMATOS = ("xlsx", "docx", "pdf")
+
+
+class ArchivoAbierto(Exception):
+    pass
+
+
+def documento_existente(ruta):
+    """Si la ruta es el documento.json de uno ya creado, devuelve (tipo, folio) de su carpeta."""
+    if ruta.name != "documento.json" or ruta.parent.parent != CARPETA_DOCS:
+        return None
+    return codigo_de_carpeta(ruta.parent.name)
 
 
 def cargar_documento(ruta_texto, negocio):
@@ -31,14 +46,26 @@ def cargar_documento(ruta_texto, negocio):
         raise DatosInvalidos(["archivo: debe estar dentro de la carpeta del proyecto"])
     if not ruta.is_file():
         raise DatosInvalidos([f"archivo: no existe {ruta_texto}"])
-    try:
-        doc = leer_json(ruta)
-    except ValueError as e:
-        raise DatosInvalidos([f"archivo: no es un JSON válido ({e})"])
+    doc = cargar_json_validado(ruta, "archivo")
     errores = validar_documento(doc)
     if errores:
         raise DatosInvalidos(errores)
-    return ruta, completar_documento(doc, negocio)
+    doc = completar_documento(doc, negocio)
+
+    existente = documento_existente(ruta)
+    if existente:
+        # El número y el tipo los manda la carpeta: así no se pisa otro documento.
+        tipo, folio = existente
+        if doc["tipo"] != tipo or doc.get("folio", folio) != folio:
+            raise DatosInvalidos(["documento: a uno ya creado no se le cambia el tipo ni el número. "
+                                  "Para eso se crea uno nuevo a partir de este"])
+        doc["folio"] = folio
+    else:
+        doc.pop("folio", None)   # un borrador nunca elige su número
+
+    if calcular(doc, negocio)["total"] >= TOTAL_MAXIMO:
+        raise DatosInvalidos(["documento: el total es demasiado grande"])
+    return ruta, doc, existente is not None
 
 
 def imprimir_resumen(vista):
@@ -47,7 +74,8 @@ def imprimir_resumen(vista):
     print()
     for it in vista["lineas"]:
         desc = f" (desc. {it['descuento_txt']})" if it["descuento_txt"] else ""
-        print(f"  {it['n']}. {' '.join(it['descripcion'].split())} — {it['cantidad_txt']} × {it['precio_txt']}{desc} = {it['total_txt']}")
+        print(f"  {it['n']}. {' '.join(it['descripcion'].split())} — "
+              f"{it['cantidad_txt']} × {it['precio_txt']}{desc} = {it['total_txt']}")
     print()
     for t in vista["totales"]:
         print(f"  {t['etiqueta']}: {t['texto']}")
@@ -77,6 +105,9 @@ def revisar():
         print(f"OK negocio configurado: {n['nombre']}")
     except DatosInvalidos as e:
         print("PENDIENTE negocio: " + "; ".join(e.errores))
+    if CARPETA_BORRADORES.exists():
+        for borrador in sorted(CARPETA_BORRADORES.glob("*.json")):
+            print(f"A MEDIAS {borrador.name}")
     return 0 if ok else 1
 
 
@@ -101,16 +132,15 @@ def negocio():
     print(f"OK {n['nombre']} · {n.get('pais', '')}")
     print(f"Moneda {n['moneda']['codigo']} · {n['impuesto']['nombre']} {n['impuesto']['tasa']}%"
           + (" incluido en los precios" if n["impuesto"].get("incluido_en_precios") else ""))
-    print("Logo: " + (str(ruta_logo(n).name) if n.get("logo") else "sin logo"))
+    print("Logo: " + (ruta_logo(n).name if n.get("logo") else "sin logo"))
     return 0
 
 
 def previa(ruta_texto):
     from contenido import armar
     n = cargar_negocio()
-    _, doc = cargar_documento(ruta_texto, n)
-    if doc.get("folio") is None:
-        doc["folio"] = proximo_folio(doc["tipo"])
+    _, doc, _ = cargar_documento(ruta_texto, n)
+    doc.setdefault("folio", proximo_folio(doc["tipo"]))
     imprimir_resumen(armar(doc, n))
     return 0
 
@@ -120,36 +150,57 @@ def crear(ruta_texto):
     import excel
     import pdf
     import word
+    modulos = {"xlsx": excel, "docx": word, "pdf": pdf}
 
     n = cargar_negocio()
-    entrada, doc = cargar_documento(ruta_texto, n)
+    entrada, doc, existente = cargar_documento(ruta_texto, n)
     logo = ruta_logo(n)
-    if doc.get("folio") is None:
+    if not existente:
         doc["folio"] = siguiente_folio(doc["tipo"])
 
     carpeta = carpeta_documento(doc)
-    # Si se regenera un documento cuyo cliente cambió de nombre, se mueve su carpeta.
-    if entrada.name == "documento.json" and entrada.parent.parent == CARPETA_DOCS and entrada.parent != carpeta:
-        if not carpeta.exists():
+    base = carpeta.name
+    nombre_anterior = entrada.parent.name if existente else None
+    if existente and entrada.parent != carpeta:
+        # El cliente cambió de nombre: la carpeta se renombra con él.
+        if carpeta.exists():
+            raise DatosInvalidos([f"ya existe otra carpeta llamada {base}"])
+        try:
             entrada.parent.rename(carpeta)
+        except PermissionError:
+            raise ArchivoAbierto()
     carpeta.mkdir(parents=True, exist_ok=True)
-    for viejo in [*carpeta.glob("*.pdf"), *carpeta.glob("*.docx"), *carpeta.glob("*.xlsx")]:
-        viejo.unlink()
-    escribir_json(carpeta / "documento.json", doc)
 
     vista = armar(doc, n)
-    base = f"{codigo_documento(doc)} {nombre_seguro(doc['cliente']['nombre'])}"
     creados, problemas = [], []
-    for extension, modulo in (("xlsx", excel), ("docx", word), ("pdf", pdf)):
-        destino = carpeta / f"{base}.{extension}"
+    for extension in FORMATOS:
+        final = carpeta / f"{base}.{extension}"
+        # Primero a un archivo nuevo y recién ahí se reemplaza: si algo falla, la
+        # versión anterior sigue intacta. Solo se toca el archivo con este nombre;
+        # cualquier otro archivo de la carpeta (una versión firmada, una copia
+        # editada) no se toca nunca.
+        temporal = carpeta / f"{base}.nuevo.{extension}"
         try:
-            modulo.generar(vista, logo, destino)
-            creados.append(destino)
+            modulos[extension].generar(vista, logo, temporal)
+            os.replace(temporal, final)
+            creados.append(final)
+        except PermissionError:
+            problemas.append(f"{extension.upper()}: el archivo anterior está abierto en otro programa. "
+                             "Hay que cerrarlo y volver a crear")
         except Exception as e:  # un formato que falla no bloquea a los otros
             problemas.append(f"{extension.upper()}: {e}")
+        finally:
+            temporal.unlink(missing_ok=True)
+    escribir_json(carpeta / "documento.json", doc)
 
-    borradores = CARPETA_DOCS / "borradores"
-    if entrada.parent == borradores:
+    if nombre_anterior and nombre_anterior != base:
+        for extension in FORMATOS:
+            if (carpeta / f"{base}.{extension}").exists():
+                try:
+                    (carpeta / f"{nombre_anterior}.{extension}").unlink(missing_ok=True)
+                except PermissionError:
+                    pass
+    if entrada.parent == CARPETA_BORRADORES:
         entrada.unlink(missing_ok=True)
 
     imprimir_resumen(vista)
@@ -179,6 +230,10 @@ def main(argv):
         for error in e.errores:
             print(f"  - {error}")
         return 2
+    except ArchivoAbierto:
+        print("NO SE PUDO: uno de los archivos de este documento está abierto en otro programa "
+              "(Word, Excel o un lector de PDF). Hay que cerrarlo y volver a crear.")
+        return 4
 
 
 if __name__ == "__main__":

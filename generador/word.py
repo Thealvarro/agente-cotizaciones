@@ -133,7 +133,11 @@ def tabla(contenedor, filas, anchos_mm, sin_bordes=True):
     return t
 
 
-def no_partir_fila(fila):
+def no_partir_fila(fila, *textos):
+    """Evita que una fila corta quede partida entre dos páginas. Una fila larga
+    sí se deja partir: si no, Word corta en silencio lo que no cabe en la hoja."""
+    if sum(len(t or "") + 60 * (t or "").count("\n") for t in textos) > 500:
+        return
     trpr = fila._tr.get_or_add_trPr()
     el = OxmlElement("w:cantSplit")
     trpr.append(el)
@@ -256,7 +260,7 @@ def tabla_items(doc, v):
         run(par, titulo, 7.5, True, c["sobre_principal"], caps=True)
 
     for fila, it in zip(t.rows[1:], v["lineas"]):
-        no_partir_fila(fila)
+        no_partir_fila(fila, it["descripcion"], it["detalle"])
         valores = [str(it["n"]), None, it["cantidad_txt"] + (f" {it['unidad']}" if it["unidad"] else ""),
                    it["precio_txt"]] + ([it["descuento_txt"]] if desc else []) + [it["total_txt"]]
         for i, (celda, valor) in enumerate(zip(fila.cells, valores)):
@@ -439,7 +443,7 @@ def propuesta(doc, v, ruta_logo):
         seccion(doc, k, "Alcance", c)
         t = tabla(doc, 1, [85, 4, 85])
         margen_celdas(t, 130, 130, 160, 160)
-        no_partir_fila(t.rows[0])
+        no_partir_fila(t.rows[0], *p["incluye"], *p["no_incluye"])
         si, _, no = t.rows[0].cells
         for celda, titulo, lista, fondo in ((si, "Incluye", p["incluye"], True),
                                             (no, "No incluye", p["no_incluye"], False)):
@@ -461,7 +465,7 @@ def propuesta(doc, v, ruta_logo):
         bordes(t, c["borde"], lados=("insideH",))
         margen_celdas(t, 90, 90, 0, 0)
         for fila, et in zip(t.rows, p["etapas"]):
-            no_partir_fila(fila)
+            no_partir_fila(fila, et["nombre"], et.get("descripcion"))
             a, b = fila.cells
             run(primer_parrafo(a, despues=1), et["nombre"], 10, True, c["tinta"])
             if et.get("descripcion"):

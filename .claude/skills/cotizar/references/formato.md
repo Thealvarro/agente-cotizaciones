@@ -11,7 +11,10 @@ Ejemplos completos y válidos en `ejemplos/`: úsalos como punto de partida.
 - **Fechas** como `AAAA-MM-DD`. La fecha de emisión es la de hoy salvo que el usuario diga otra.
 - **Porcentajes** como número de 0 a 100: `10` es 10%.
 - **Textos** con saltos de línea normales (`\n`). Un párrafo nuevo es una línea vacía (`\n\n`).
-- **Nunca** pongas un `folio` en un borrador nuevo: el generador asigna el siguiente número.
+- **Nunca** pongas un `folio` en un borrador nuevo: el generador asigna el siguiente número (y si
+  viene uno, lo ignora).
+- Un campo opcional que no tienes, **no lo pongas**. Si queda en `null`, el generador lo trata como
+  ausente.
 
 ---
 

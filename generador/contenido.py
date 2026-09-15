@@ -37,9 +37,9 @@ def armar(documento, negocio):
             "precio_unitario": l["precio_unitario"],
             "descuento_pct": desc,
             "total": l["total"],
-            "cantidad_txt": formato_cantidad(l["cantidad"]),
+            "cantidad_txt": formato_cantidad(l["cantidad"], moneda),
             "precio_txt": dinero(l["precio_unitario"]),
-            "descuento_txt": formato_pct(desc) if desc else "",
+            "descuento_txt": formato_pct(desc, moneda) if desc else "",
             "total_txt": dinero(l["total"]),
         })
 
@@ -49,14 +49,14 @@ def armar(documento, negocio):
     desc_global = documento.get("descuento_global_pct", 0) or 0
 
     totales = []
-    if desc_global or incluido or not con_impuesto:
-        totales.append({"clave": "subtotal", "etiqueta": "Subtotal", "valor": calc["subtotal"]})
+    # Subtotal solo cuando hay descuento: sin descuento repetiría la línea de abajo.
     if desc_global:
-        totales.append({"clave": "descuento", "etiqueta": f"Descuento {formato_pct(desc_global)}",
+        totales.append({"clave": "subtotal", "etiqueta": "Subtotal", "valor": calc["subtotal"]})
+        totales.append({"clave": "descuento", "etiqueta": f"Descuento {formato_pct(desc_global, moneda)}",
                         "valor": -calc["descuento"]})
     if con_impuesto:
         totales.append({"clave": "neto", "etiqueta": "Neto", "valor": calc["neto"]})
-        etiqueta_imp = f"{imp['nombre']} {formato_pct(imp['tasa'])}" + (" incluido" if incluido else "")
+        etiqueta_imp = f"{imp['nombre']} {formato_pct(imp['tasa'], moneda)}" + (" incluido" if incluido else "")
         totales.append({"clave": "impuesto", "etiqueta": etiqueta_imp, "valor": calc["impuesto"]})
     totales.append({"clave": "total", "etiqueta": "Total", "valor": calc["total"]})
     for t in totales:
@@ -70,7 +70,7 @@ def armar(documento, negocio):
         condiciones.append(("Datos para el pago", negocio["datos_pago"]))
 
     tipo = documento["tipo"]
-    nombre_doc = "Propuesta" if tipo == "propuesta" else negocio.get("nombre_documento", "Cotización")
+    nombre_doc = "Propuesta" if tipo == "propuesta" else (negocio.get("nombre_documento") or "Cotización")
     idt = negocio.get("id_tributario", {})
 
     vista = {
@@ -94,7 +94,7 @@ def armar(documento, negocio):
         "incluido": incluido,
         "nota_impuesto": f"Exento de {imp['nombre']}" if exento else "",
         "nota_total": (f"Exento de {imp['nombre']}" if exento else
-                       f"Incluye {imp['nombre']} {formato_pct(imp['tasa'])}" if con_impuesto else ""),
+                       f"Incluye {imp['nombre']} {formato_pct(imp['tasa'], moneda)}" if con_impuesto else ""),
         "condiciones": condiciones,
         "aviso": AVISO,
         "moneda": moneda,
