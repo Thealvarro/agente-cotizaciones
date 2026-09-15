@@ -1,0 +1,82 @@
+{% macro encabezado(v, logo_src) %}
+<header class="cab">
+  <div>
+    {% if logo_src %}<img class="logo" src="{{ logo_src }}" alt="">
+    {% else %}<div class="marca-nombre">{{ v.negocio.nombre }}</div>{% endif %}
+  </div>
+  <div class="emisor">
+    {% if logo_src %}<strong>{{ v.negocio.nombre }}</strong>{% endif %}
+    {% if v.negocio.id_valor %}{{ v.negocio.id_etiqueta }} {{ v.negocio.id_valor }}<br>{% endif %}
+    {% if v.negocio.direccion %}{{ v.negocio.direccion }}<br>{% endif %}
+    {% if v.negocio.email %}{{ v.negocio.email }}{% endif %}{% if v.negocio.email and v.negocio.telefono %} · {% endif %}{% if v.negocio.telefono %}{{ v.negocio.telefono }}{% endif %}
+    {% if v.negocio.web %}<br>{{ v.negocio.web }}{% endif %}
+  </div>
+</header>
+<div class="franja"></div>
+{% endmacro %}
+
+
+{% macro tabla_items(v) %}
+<table class="items">
+  <thead>
+    <tr>
+      <th class="c-n">#</th>
+      <th>Descripción</th>
+      <th class="der">Cant.</th>
+      <th class="der">Precio unit.</th>
+      {% if v.hay_desc_linea %}<th class="der">Desc.</th>{% endif %}
+      <th class="der">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for it in v.lineas %}
+    <tr>
+      <td class="c-n num">{{ it.n }}</td>
+      <td><span class="desc libre">{{ it.descripcion }}</span>{% if it.detalle %}<span class="detalle libre">{{ it.detalle }}</span>{% endif %}</td>
+      <td class="der num">{{ it.cantidad_txt }}{% if it.unidad %} <span class="unidad">{{ it.unidad }}</span>{% endif %}</td>
+      <td class="der num">{{ it.precio_txt }}</td>
+      {% if v.hay_desc_linea %}<td class="der num">{{ it.descuento_txt }}</td>{% endif %}
+      <td class="der num">{{ it.total_txt }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}
+
+
+{% macro condiciones_y_totales(v) %}
+<div class="bajo-tabla">
+  <div class="condiciones">
+    <div class="cond">
+      <div class="rotulo">Validez</div>
+      <p>Esta oferta es válida hasta el {{ v.vence }}.</p>
+    </div>
+    {% for etiqueta, texto in v.condiciones %}
+    <div class="cond">
+      <div class="rotulo">{{ etiqueta }}</div>
+      <p class="libre">{{ texto }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="caja-totales">
+    <table class="totales">
+      {% for t in v.totales if t.clave != 'total' %}
+      <tr><td>{{ t.etiqueta }}</td><td class="num">{{ t.texto }}</td></tr>
+      {% endfor %}
+    </table>
+    {% for t in v.totales if t.clave == 'total' %}
+    <div class="fila-total"><span>{{ t.etiqueta }}</span><span class="num">{{ t.texto }}</span></div>
+    {% endfor %}
+    {% if v.nota_impuesto %}<div class="nota-imp">{{ v.nota_impuesto }}</div>{% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+
+{% macro aceptacion(v) %}
+<div class="aceptacion">
+  <div class="firma">Nombre y firma de aceptación</div>
+  <div class="firma">Fecha</div>
+</div>
+<p class="aviso">{{ v.aviso }}</p>
+{% endmacro %}

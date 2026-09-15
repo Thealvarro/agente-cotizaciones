@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>{{ v.codigo }} · {{ v.nombre_documento }}</title>
+<style>
+  /* Los colores vienen validados como #rrggbb desde datos.paleta(). Ningún
+     texto escrito por el usuario entra a este bloque <style>. */
+  :root{
+    --p:{{ v.colores.principal }};
+    --sobre-p:{{ v.colores.sobre_principal }};
+    --p-texto:{{ v.colores.principal_texto }};
+    --acento:{{ v.colores.acento }};
+    --acento-texto:{{ v.colores.acento_texto }};
+    --tinte:{{ v.colores.tinte }};
+    --tinte-fuerte:{{ v.colores.tinte_fuerte }};
+    --tinta:{{ v.colores.tinta }};
+    --tinta-2:{{ v.colores.tinta_2 }};
+    --tinta-3:{{ v.colores.tinta_3 }};
+    --borde:{{ v.colores.borde }};
+  }
+
+  @page{
+    size:A4;
+    margin:15mm 15mm 17mm;
+    @bottom-left{
+      content:"{{ v.codigo }}";
+      font:600 8pt Inter,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+      color:{{ v.colores.tinta_3 }};
+    }
+    @bottom-right{
+      content:"Página " counter(page) " de " counter(pages);
+      font:8pt Inter,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+      color:{{ v.colores.tinta_3 }};
+    }
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    font-family:Inter,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    color:var(--tinta);
+    font-size:9.6pt;
+    line-height:1.5;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .libre{white-space:pre-line}
+  .rotulo{
+    font-size:7.2pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--acento-texto);margin-bottom:4px;
+  }
+
+  /* ---------- Encabezado del emisor ---------- */
+  .cab{display:flex;justify-content:space-between;align-items:flex-start;gap:12mm}
+  .logo{max-height:17mm;max-width:58mm;object-fit:contain;display:block}
+  .marca-nombre{font-size:17pt;font-weight:700;letter-spacing:-.02em;color:var(--p-texto);line-height:1.1}
+  .emisor{text-align:right;font-size:8.2pt;color:var(--tinta-2);line-height:1.55}
+  .emisor strong{display:block;color:var(--tinta);font-size:9.4pt;font-weight:600}
+  .franja{height:3px;background:var(--p);margin:6mm 0 7mm;border-radius:2px}
+
+  /* ---------- Ítems ---------- */
+  table.items{width:100%;border-collapse:collapse;margin-top:2mm}
+  table.items thead{display:table-header-group}
+  table.items th{
+    background:var(--p);color:var(--sobre-p);
+    font-size:7.6pt;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+    text-align:left;padding:7px 9px;
+  }
+  table.items th + th{box-shadow:-1px 0 0 0 var(--p)}  /* tapa la marca fina entre celdas pintadas */
+  table.items th:first-child{border-radius:5px 0 0 0}
+  table.items th:last-child{border-radius:0 5px 0 0}
+  table.items td{padding:8px 9px;border-bottom:1px solid var(--borde);vertical-align:top}
+  table.items tr{break-inside:avoid}
+  table.items tbody tr:nth-child(even) td{background:#fafbfc}
+  table.items .c-n{width:7mm;color:var(--tinta-3);font-size:8.2pt}
+  table.items th.c-n{color:var(--sobre-p)}
+  table.items .der{text-align:right}
+  table.items .desc{font-weight:500}
+  table.items .detalle{display:block;color:var(--tinta-3);font-size:8.2pt;margin-top:2px;font-weight:400}
+  table.items .unidad{color:var(--tinta-3);font-size:8pt}
+
+  /* ---------- Condiciones y totales ---------- */
+  .bajo-tabla{display:flex;gap:9mm;justify-content:space-between;align-items:flex-start;margin-top:6mm;break-inside:avoid}
+  .condiciones{flex:1;min-width:0}
+  .cond{margin-bottom:4.5mm}
+  .cond p{color:var(--tinta-2);font-size:8.8pt}
+  .caja-totales{width:74mm;flex:none}
+  table.totales{width:100%;border-collapse:collapse}
+  table.totales td{padding:5px 9px;font-size:9pt;border-bottom:1px solid var(--borde)}
+  table.totales td:first-child{color:var(--tinta-2)}
+  table.totales td:last-child{text-align:right}
+  .fila-total{
+    display:flex;justify-content:space-between;margin-top:3px;padding:9px;border-radius:5px;
+    background:var(--p);color:var(--sobre-p);font-weight:700;font-size:11.5pt;
+  }
+  .nota-imp{font-size:7.8pt;color:var(--tinta-3);text-align:right;margin-top:4px}
+
+  /* ---------- Aceptación y aviso ---------- */
+  .aceptacion{display:flex;gap:12mm;margin-top:11mm;break-inside:avoid}
+  .firma{flex:1;border-top:1px solid var(--tinta-3);padding-top:5px;font-size:7.8pt;color:var(--tinta-3)}
+  .aviso{margin-top:8mm;font-size:7.6pt;color:var(--tinta-3);text-align:center;break-inside:avoid}
+
+  {% block estilos %}{% endblock %}
+</style>
+</head>
+<body>
+{% block cuerpo %}{% endblock %}
+</body>
+</html>

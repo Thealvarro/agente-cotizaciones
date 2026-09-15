@@ -1,0 +1,56 @@
+{% extends "_base.html" %}
+{% import "_bloques.html" as b %}
+
+{% block estilos %}
+  .cabecera-doc{display:flex;justify-content:space-between;align-items:flex-end;gap:10mm;margin-bottom:7mm}
+  .cabecera-doc h1{font-size:25pt;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--tinta)}
+  .cabecera-doc .codigo{font-size:9pt;font-weight:600;color:var(--acento-texto);margin-top:3px;letter-spacing:.02em}
+  .fechas{display:flex;gap:8mm;text-align:right}
+  .fechas .valor{font-size:9.2pt;font-weight:500}
+
+  .partes{display:flex;gap:7mm;margin-bottom:7mm;break-inside:avoid}
+  .cliente{flex:1;border:1px solid var(--borde);border-radius:7px;padding:4.5mm 5mm}
+  .cliente .nombre{font-size:11.2pt;font-weight:600;line-height:1.3}
+  .cliente .datos{font-size:8.6pt;color:var(--tinta-2);margin-top:2px;line-height:1.55}
+  .resumen{width:62mm;flex:none;background:var(--tinte);border-radius:7px;padding:4.5mm 5mm;display:flex;flex-direction:column;justify-content:center}
+  .resumen .monto{font-size:17pt;font-weight:700;letter-spacing:-.02em;color:var(--p-texto);line-height:1.15}
+  .resumen .sub{font-size:7.8pt;color:var(--tinta-3);margin-top:2px}
+{% endblock %}
+
+{% block cuerpo %}
+{{ b.encabezado(v, logo_src) }}
+
+<div class="cabecera-doc">
+  <div>
+    <h1>{{ v.nombre_documento }}</h1>
+    <div class="codigo">N° {{ v.codigo }}</div>
+  </div>
+  <div class="fechas">
+    <div><div class="rotulo">Emisión</div><div class="valor">{{ v.emision }}</div></div>
+    <div><div class="rotulo">Válida hasta</div><div class="valor">{{ v.vence }}</div></div>
+  </div>
+</div>
+
+<div class="partes">
+  <div class="cliente">
+    <div class="rotulo">Para</div>
+    <div class="nombre">{{ v.cliente.nombre }}</div>
+    <div class="datos">
+      {% if v.cliente.empresa %}{{ v.cliente.empresa }}<br>{% endif %}
+      {% if v.cliente.id_tributario %}{{ v.negocio.id_etiqueta or "ID" }} {{ v.cliente.id_tributario }}<br>{% endif %}
+      {% if v.cliente.contacto %}Atención: {{ v.cliente.contacto }}<br>{% endif %}
+      {% if v.cliente.email %}{{ v.cliente.email }}{% endif %}{% if v.cliente.email and v.cliente.telefono %} · {% endif %}{% if v.cliente.telefono %}{{ v.cliente.telefono }}{% endif %}
+      {% if v.cliente.direccion %}<br>{{ v.cliente.direccion }}{% endif %}
+    </div>
+  </div>
+  <div class="resumen">
+    <div class="rotulo">Total</div>
+    <div class="monto num">{{ v.total_txt }}</div>
+    <div class="sub">{{ v.nota_total }}</div>
+  </div>
+</div>
+
+{{ b.tabla_items(v) }}
+{{ b.condiciones_y_totales(v) }}
+{{ b.aceptacion(v) }}
+{% endblock %}

@@ -1,0 +1,41 @@
+{
+  "tipo": "cotizacion",
+  "fecha": "2026-09-15",
+  "validez_dias": 15,
+  "cliente": {
+    "nombre": "Panadería La Espiga",
+    "empresa": "Comercial La Espiga Ltda.",
+    "id_tributario": "76.987.654-3",
+    "contacto": "Carolina Muñoz",
+    "email": "carolina@laespiga.cl",
+    "telefono": "+56 2 2345 6789",
+    "direccion": "Irarrázaval 3150, Ñuñoa, Santiago"
+  },
+  "items": [
+    {
+      "descripcion": "Diseño de identidad visual",
+      "detalle": "Logotipo, paleta de colores, tipografías y manual de marca en PDF.",
+      "cantidad": 1,
+      "unidad": "proyecto",
+      "precio_unitario": 450000
+    },
+    {
+      "descripcion": "Diseño de piezas para redes sociales",
+      "detalle": "Plantillas editables para publicaciones e historias.",
+      "cantidad": 12,
+      "unidad": "piezas",
+      "precio_unitario": 18000,
+      "descuento_pct": 10
+    },
+    {
+      "descripcion": "Sesión de fotografía de productos",
+      "cantidad": 1,
+      "unidad": "sesión",
+      "precio_unitario": 180000
+    }
+  ],
+  "descuento_global_pct": 0,
+  "condiciones": {
+    "entrega": "Tres semanas desde la aceptación y el primer pago."
+  }
+}

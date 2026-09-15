@@ -1,0 +1,12 @@
+# Datos del negocio y documentos de clientes: nunca se suben.
+# Contienen RUT, correos, teléfonos, montos y datos bancarios.
+mi-negocio/
+mis-documentos/
+
+# Entorno de Python
+.venv/
+__pycache__/
+*.pyc
+
+# Salida de las pruebas
+tests/_salida/

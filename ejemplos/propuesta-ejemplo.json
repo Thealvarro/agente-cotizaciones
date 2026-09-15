@@ -1,0 +1,48 @@
+{
+  "tipo": "propuesta",
+  "fecha": "2026-09-15",
+  "validez_dias": 30,
+  "cliente": {
+    "nombre": "Ricardo Soto",
+    "empresa": "Clínica Veterinaria Huellitas",
+    "id_tributario": "76.555.444-1",
+    "contacto": "Ricardo Soto, gerente",
+    "email": "ricardo@huellitas.cl",
+    "telefono": "+56 9 1234 5678"
+  },
+  "propuesta": {
+    "titulo": "Nueva marca y lanzamiento digital",
+    "contexto": "Huellitas atiende hace ocho años en La Reina y tiene una clientela fiel que llega por recomendación. Hoy la marca no refleja la calidad del servicio, y cuando alguien nuevo busca una veterinaria en internet, no encuentra a Huellitas.\n\nEl objetivo es que la clínica se vea tan profesional como es, y que empiece a llegar gente nueva por redes sociales y Google.",
+    "solucion": "Proponemos renovar la identidad visual completa y acompañar el lanzamiento con dos meses de contenido en redes sociales, para que el cambio se note y se sostenga.\n\nTrabajamos por etapas cortas con una revisión al final de cada una: nada avanza sin tu aprobación.",
+    "incluye": [
+      "Logotipo y manual de marca",
+      "Papelería: tarjetas, recetas y certificados",
+      "24 publicaciones para redes sociales",
+      "Configuración de la ficha de Google Business",
+      "Dos rondas de cambios por etapa"
+    ],
+    "no_incluye": [
+      "Pauta publicitaria pagada",
+      "Impresión de material físico",
+      "Sitio web"
+    ],
+    "etapas": [
+      { "nombre": "Descubrimiento", "duracion": "1 semana", "descripcion": "Reunión con el equipo, revisión de la competencia y definición del tono de la marca." },
+      { "nombre": "Identidad visual", "duracion": "3 semanas", "descripcion": "Propuestas de logotipo, elección y desarrollo del manual de marca." },
+      { "nombre": "Aplicaciones", "duracion": "2 semanas", "descripcion": "Papelería y plantillas para redes sociales con la nueva marca." },
+      { "nombre": "Lanzamiento", "duracion": "8 semanas", "descripcion": "Publicación del contenido y ajustes según la respuesta de la comunidad." }
+    ],
+    "por_que_nosotros": "Llevamos seis años trabajando con negocios de barrio en Santiago. Sabemos que el presupuesto importa y que el dueño no tiene tiempo de reuniones eternas: por eso las etapas son cortas y cada entrega llega lista para usar.",
+    "proximos_pasos": "Si la propuesta te hace sentido, respóndenos confirmando y agendamos la reunión de descubrimiento esa misma semana."
+  },
+  "items": [
+    { "descripcion": "Identidad visual completa", "detalle": "Logotipo, manual de marca y papelería.", "cantidad": 1, "unidad": "proyecto", "precio_unitario": 850000 },
+    { "descripcion": "Contenido para redes sociales", "detalle": "12 publicaciones mensuales con diseño y textos.", "cantidad": 2, "unidad": "meses", "precio_unitario": 290000 },
+    { "descripcion": "Configuración de Google Business", "cantidad": 1, "unidad": "servicio", "precio_unitario": 120000 }
+  ],
+  "descuento_global_pct": 5,
+  "condiciones": {
+    "pago": "40% al aceptar, 30% al aprobar la identidad visual y 30% al iniciar el lanzamiento.",
+    "entrega": "14 semanas en total, según las etapas descritas."
+  }
+}

@@ -1,0 +1,159 @@
+{% extends "_base.html" %}
+{% import "_bloques.html" as b %}
+
+{% block estilos %}
+  @page portada{
+    margin:0;
+    @bottom-left{content:none}
+    @bottom-right{content:none}
+  }
+  .portada{
+    page:portada;
+    width:210mm;height:297mm;
+    background:var(--p);color:var(--sobre-p);
+    display:flex;flex-direction:column;justify-content:space-between;
+    padding:22mm 20mm 20mm;
+    break-after:page;
+  }
+  .tarjeta-logo{background:#fff;border-radius:8px;padding:4mm 5mm;display:inline-block}
+  .tarjeta-logo .logo{max-height:15mm}
+  .portada .marca-nombre{color:var(--sobre-p)}
+  .portada .kicker{font-size:8.5pt;font-weight:700;letter-spacing:.2em;text-transform:uppercase;opacity:.82;margin-bottom:7mm}
+  .portada h1{font-size:36pt;font-weight:700;letter-spacing:-.035em;line-height:1.05;margin-bottom:8mm;max-width:160mm}
+  .portada .para{font-size:13pt;font-weight:300;opacity:.92}
+  .portada .para strong{font-weight:600}
+  .portada .raya{width:16mm;height:3px;background:var(--acento);margin-bottom:5mm}
+  .portada .pie{display:flex;justify-content:space-between;align-items:flex-end;font-size:9pt;line-height:1.6}
+  .portada .pie .emisor-p{opacity:.9}
+  .portada .pie .emisor-p strong{font-size:11pt;display:block;opacity:1}
+  .portada .pie .fecha{text-align:right;opacity:.9}
+
+  .seccion{margin-bottom:9mm}
+  .seccion .n{break-after:avoid;font-size:22pt;font-weight:800;letter-spacing:-.04em;color:var(--acento-texto);line-height:1}
+  .seccion h2{font-size:16pt;font-weight:700;letter-spacing:-.025em;margin:2mm 0 4mm;color:var(--tinta);break-after:avoid}
+  .seccion p{color:var(--tinta-2);margin-bottom:3mm;font-size:9.8pt;line-height:1.62}
+
+  .alcance{display:flex;gap:7mm;break-inside:avoid}
+  .col{flex:1;border-radius:7px;padding:4.5mm 5mm}
+  .col.si{background:var(--tinte)}
+  .col.no{border:1px solid var(--borde)}
+  .col ul{list-style:none}
+  .col li{position:relative;padding-left:5mm;margin-bottom:2mm;color:var(--tinta-2);font-size:9.3pt}
+  .col.si li::before{content:"";position:absolute;left:0;top:.55em;width:2.2mm;height:2.2mm;border-radius:50%;background:var(--p)}
+  .col.no li::before{content:"";position:absolute;left:0;top:.7em;width:2.4mm;height:.5mm;background:var(--tinta-3)}
+
+  .etapas{border-left:2px solid var(--tinte-fuerte);margin-left:2mm;padding-left:6mm}
+  .etapa{position:relative;margin-bottom:5mm;break-inside:avoid}
+  .etapa::before{content:"";position:absolute;left:-8.1mm;top:1.2mm;width:3mm;height:3mm;border-radius:50%;background:var(--p);border:2px solid #fff}
+  .etapa .cabeza{display:flex;justify-content:space-between;gap:6mm;align-items:baseline}
+  .etapa .nombre{font-weight:600;font-size:10pt}
+  .etapa .dur{font-size:8.4pt;color:var(--acento-texto);font-weight:600;white-space:nowrap}
+  .etapa p{margin:1mm 0 0}
+
+{% endblock %}
+
+{% block cuerpo %}
+{% set p = v.propuesta %}
+
+<section class="portada">
+  <div>
+    {% if logo_src %}<div class="tarjeta-logo"><img class="logo" src="{{ logo_src }}" alt=""></div>
+    {% else %}<div class="marca-nombre">{{ v.negocio.nombre }}</div>{% endif %}
+  </div>
+  <div>
+    <div class="kicker">Propuesta · {{ v.codigo }}</div>
+    <h1>{{ p.titulo }}</h1>
+    <div class="para">Preparada para <strong>{{ v.cliente.empresa or v.cliente.nombre }}</strong></div>
+  </div>
+  <div class="pie">
+    <div class="emisor-p">
+      <div class="raya"></div>
+      <strong>{{ v.negocio.nombre }}</strong>
+      {% if v.negocio.email %}{{ v.negocio.email }}{% endif %}{% if v.negocio.email and v.negocio.telefono %} · {% endif %}{% if v.negocio.telefono %}{{ v.negocio.telefono }}{% endif %}
+      {% if v.negocio.web %}<br>{{ v.negocio.web }}{% endif %}
+    </div>
+    <div class="fecha">{{ v.emision }}<br>Válida hasta el {{ v.vence }}</div>
+  </div>
+</section>
+
+{{ b.encabezado(v, logo_src) }}
+
+{% set ns = namespace(n=0) %}
+
+{% if p.contexto %}{% set ns.n = ns.n + 1 %}
+<section class="seccion">
+  <div class="n">{{ '%02d' % ns.n }}</div>
+  <h2>Contexto</h2>
+  {% for par in p.contexto %}<p class="libre">{{ par }}</p>{% endfor %}
+</section>
+{% endif %}
+
+{% if p.solucion %}{% set ns.n = ns.n + 1 %}
+<section class="seccion">
+  <div class="n">{{ '%02d' % ns.n }}</div>
+  <h2>Nuestra propuesta</h2>
+  {% for par in p.solucion %}<p class="libre">{{ par }}</p>{% endfor %}
+</section>
+{% endif %}
+
+{% if p.incluye or p.no_incluye %}{% set ns.n = ns.n + 1 %}
+<section class="seccion">
+  <div class="n">{{ '%02d' % ns.n }}</div>
+  <h2>Alcance</h2>
+  <div class="alcance">
+    {% if p.incluye %}
+    <div class="col si">
+      <div class="rotulo">Incluye</div>
+      <ul>{% for x in p.incluye %}<li class="libre">{{ x }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+    {% if p.no_incluye %}
+    <div class="col no">
+      <div class="rotulo">No incluye</div>
+      <ul>{% for x in p.no_incluye %}<li class="libre">{{ x }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% if p.etapas %}{% set ns.n = ns.n + 1 %}
+<section class="seccion">
+  <div class="n">{{ '%02d' % ns.n }}</div>
+  <h2>Etapas y plazos</h2>
+  <div class="etapas">
+    {% for et in p.etapas %}
+    <div class="etapa">
+      <div class="cabeza"><span class="nombre">{{ et.nombre }}</span>{% if et.duracion %}<span class="dur">{{ et.duracion }}</span>{% endif %}</div>
+      {% if et.descripcion %}<p class="libre">{{ et.descripcion }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% set ns.n = ns.n + 1 %}
+<section class="seccion">
+  <div class="n">{{ '%02d' % ns.n }}</div>
+  <h2>Inversión</h2>
+  {{ b.tabla_items(v) }}
+  {{ b.condiciones_y_totales(v) }}
+</section>
+
+{% if p.por_que_nosotros %}{% set ns.n = ns.n + 1 %}
+<section class="seccion">
+  <div class="n">{{ '%02d' % ns.n }}</div>
+  <h2>Por qué nosotros</h2>
+  {% for par in p.por_que_nosotros %}<p class="libre">{{ par }}</p>{% endfor %}
+</section>
+{% endif %}
+
+{% set ns.n = ns.n + 1 %}
+<section class="seccion">
+  <div class="n">{{ '%02d' % ns.n }}</div>
+  <h2>Próximos pasos</h2>
+  {% if p.proximos_pasos %}{% for par in p.proximos_pasos %}<p class="libre">{{ par }}</p>{% endfor %}
+  {% else %}<p>Para avanzar, basta con responder confirmando la aceptación de esta propuesta.</p>{% endif %}
+  {{ b.aceptacion(v) }}
+</section>
+{% endblock %}
