@@ -5,11 +5,11 @@
   "cliente": {
     "nombre": "Panadería La Espiga",
     "empresa": "Comercial La Espiga Ltda.",
-    "id_tributario": "76.987.654-3",
+    "id_tributario": "22.222.222-2",
     "contacto": "Carolina Muñoz",
-    "email": "carolina@laespiga.cl",
-    "telefono": "+56 2 2345 6789",
-    "direccion": "Irarrázaval 3150, Ñuñoa, Santiago"
+    "email": "carolina@example.com",
+    "telefono": "+56 2 0000 0000",
+    "direccion": "Pasaje Muestra 456, Santiago"
   },
   "items": [
     {

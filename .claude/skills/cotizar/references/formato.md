@@ -24,18 +24,18 @@ Ejemplos completos y válidos en `ejemplos/`: úsalos como punto de partida.
 {
   "nombre": "Estudio Aurora SpA",
   "pais": "Chile",
-  "id_tributario": { "etiqueta": "RUT", "valor": "77.123.456-7" },
-  "direccion": "Av. Providencia 1234, Santiago",
-  "email": "hola@estudioaurora.cl",
-  "telefono": "+56 9 8765 4321",
-  "web": "estudioaurora.cl",
+  "id_tributario": { "etiqueta": "RUT", "valor": "11.111.111-1" },
+  "direccion": "Calle Ejemplo 123, Santiago",
+  "email": "hola@example.com",
+  "telefono": "+56 9 0000 0000",
+  "web": "example.com",
   "logo": "logo.png",
   "color_principal": "#0f766e",
   "color_acento": "#e07a2f",
   "moneda": { "codigo": "CLP", "simbolo": "$", "decimales": 0, "miles": ".", "decimal": ",", "simbolo_despues": false },
   "impuesto": { "nombre": "IVA", "tasa": 19, "incluido_en_precios": false },
   "nombre_documento": "Cotización",
-  "datos_pago": "Banco de Chile · Cuenta corriente 00-123-45678-90",
+  "datos_pago": "Banco de Ejemplo · Cuenta corriente 12345678",
   "condiciones_por_defecto": { "pago": "50% al inicio y 50% contra entrega.", "entrega": "", "notas": "", "validez_dias": 15 }
 }
 ```
@@ -67,11 +67,11 @@ Un borrador por documento, con el nombre del cliente en minúsculas y sin símbo
   "cliente": {
     "nombre": "Panadería La Espiga",
     "empresa": "Comercial La Espiga Ltda.",
-    "id_tributario": "76.987.654-3",
+    "id_tributario": "22.222.222-2",
     "contacto": "Carolina Muñoz",
-    "email": "carolina@laespiga.cl",
-    "telefono": "+56 2 2345 6789",
-    "direccion": "Irarrázaval 3150, Ñuñoa"
+    "email": "carolina@example.com",
+    "telefono": "+56 2 0000 0000",
+    "direccion": "Pasaje Muestra 456, Santiago"
   },
   "items": [
     { "descripcion": "Diseño de logo", "detalle": "Tres propuestas y manual", "cantidad": 1, "unidad": "proyecto", "precio_unitario": 450000 },

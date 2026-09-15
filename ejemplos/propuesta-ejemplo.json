@@ -5,14 +5,14 @@
   "cliente": {
     "nombre": "Ricardo Soto",
     "empresa": "Clínica Veterinaria Huellitas",
-    "id_tributario": "76.555.444-1",
+    "id_tributario": "33.333.333-3",
     "contacto": "Ricardo Soto, gerente",
-    "email": "ricardo@huellitas.cl",
-    "telefono": "+56 9 1234 5678"
+    "email": "ricardo@example.com",
+    "telefono": "+56 9 0000 0001"
   },
   "propuesta": {
     "titulo": "Nueva marca y lanzamiento digital",
-    "contexto": "Huellitas atiende hace ocho años en La Reina y tiene una clientela fiel que llega por recomendación. Hoy la marca no refleja la calidad del servicio, y cuando alguien nuevo busca una veterinaria en internet, no encuentra a Huellitas.\n\nEl objetivo es que la clínica se vea tan profesional como es, y que empiece a llegar gente nueva por redes sociales y Google.",
+    "contexto": "Huellitas atiende hace ocho años y tiene una clientela fiel que llega por recomendación. Hoy la marca no refleja la calidad del servicio, y cuando alguien nuevo busca una veterinaria en internet, no encuentra a Huellitas.\n\nEl objetivo es que la clínica se vea tan profesional como es, y que empiece a llegar gente nueva por redes sociales y Google.",
     "solucion": "Proponemos renovar la identidad visual completa y acompañar el lanzamiento con dos meses de contenido en redes sociales, para que el cambio se note y se sostenga.\n\nTrabajamos por etapas cortas con una revisión al final de cada una: nada avanza sin tu aprobación.",
     "incluye": [
       "Logotipo y manual de marca",
